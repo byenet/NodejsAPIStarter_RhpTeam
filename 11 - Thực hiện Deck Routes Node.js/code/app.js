@@ -1,0 +1,67 @@
+const express = require('express');
+const logger = require('morgan');
+const mongoClient = require('mongoose');
+
+// setup connect mongodb by mongoose
+// khoi tao va ket noi vao database nodejsapistarter
+mongoClient.connect('mongodb://127.0.0.1:27017/nodejsapistarter', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+    .then(() => {
+        console.log('✅ Connected database from mongodb.')
+    })
+    .catch((err) => {
+        console.error(`❌ Connect database is failed with error which is ${err}`)
+    });
+
+const app = express()
+
+const userRoute = require('./routes/user')
+const deckRoute = require('./routes/deck')
+
+// Middkewares
+app.use(logger('dev'));
+
+// Thay cho body-parser (express 4. tro len nang cap)
+app.use(express.json()) // for parsing application/json
+app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+
+// Routess
+app.use('/users', userRoute);
+app.use('/decks', deckRoute)
+
+
+// Routes
+app.get('/', (req, res, next) => {
+    return res.status(200).json({
+        message: 'Server is OK'
+    })
+});
+
+// Catch errors (ex: 404) and forward them to error handler
+app.use((req, res, next) => {
+    const err = new Error('Not Found');
+    err.status = 404;
+    next(err);
+});
+
+// Error handler function
+app.use((err, req, res, next) => {
+    const error = app.get('env') === 'development' ? err : {};
+    const status = err.status || 500;
+
+    // response to client
+    return res.status(status).json({
+        error: {
+            message: err.message
+        }
+    })
+});
+
+// Start the server
+const port = app.get('port') || 3000;
+
+app.listen(port, () => {
+    console.log(`App listening on port ${port}!`);
+});
